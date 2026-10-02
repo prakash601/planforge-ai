@@ -119,7 +119,7 @@ function updatePoints() {
   $("frame-label").textContent = sceneData.frames[selected].id;
   $("frame-count").textContent = `${selected + 1} / ${sceneData.frames.length}`;
   $("stats").textContent =
-    `${(positions.length / 3).toLocaleString()} points | scale unverified`;
+    `${(positions.length / 3).toLocaleString()}${sceneData.full_point_count ? ` / ${sceneData.full_point_count.toLocaleString()}` : ""} points | scale unverified`;
   cursor.position.fromArray(sceneData.trajectory[selected]);
   $("status").textContent = positions.length
     ? ""
@@ -146,7 +146,8 @@ async function loadCapture() {
   $("status").textContent = "Loading point cloud...";
   try {
     const entry = manifest.captures[Number($("capture").value)];
-    const data = await fetchJSON(entry.scene);
+    const raw = $("layer").value === "raw" && entry.raw_scene;
+    const data = await fetchJSON(raw ? entry.raw_scene : entry.scene);
     if (token !== loadToken) return;
     sceneData = data;
     $("frame").max = sceneData.frames.length - 1;
@@ -155,7 +156,8 @@ async function loadCapture() {
     trajectory.geometry = new THREE.BufferGeometry().setFromPoints(
       sceneData.trajectory.map((p) => new THREE.Vector3(...p)),
     );
-    $("download").href = `${sceneData.capture_id}/cloud.ply`;
+    $("download").href =
+      `${sceneData.capture_id}/${raw ? "raw.ply" : "cloud.ply"}`;
     $("hypothesis").replaceChildren();
     for (const [label, value] of Object.entries({
       "Depth scale": sceneData.hypothesis.depth_scale,
@@ -163,6 +165,18 @@ async function loadCapture() {
       "Camera axes": sceneData.hypothesis.camera_axes,
       "Pose direction": sceneData.hypothesis.pose_direction,
       "Scale status": "Unverified",
+      ...(sceneData.diagnostics
+        ? {
+            "Voxel size": `${sceneData.config.voxel_size} pose units`,
+            "Input frames":
+              sceneData.diagnostics.selected_frames.toLocaleString(),
+            "Raw samples": sceneData.diagnostics.raw_points.toLocaleString(),
+            "Filtered voxels":
+              sceneData.diagnostics.filtered_points.toLocaleString(),
+            "Outliers removed":
+              sceneData.diagnostics.outliers_removed.toLocaleString(),
+          }
+        : {}),
     })) {
       const dt = document.createElement("dt"),
         dd = document.createElement("dd");
@@ -186,6 +200,7 @@ $("rotate").addEventListener("click", () => {
   $("rotate").setAttribute("aria-pressed", String(controls.autoRotate));
 });
 $("capture").addEventListener("change", loadCapture);
+$("layer").addEventListener("change", loadCapture);
 $("confidence").addEventListener("change", updatePoints);
 $("frame").addEventListener("input", updatePoints);
 $("all").addEventListener("click", () => {
@@ -213,6 +228,15 @@ renderer.setAnimationLoop(() => {
 
 try {
   manifest = await fetchJSON("manifest.json");
+  if (manifest.stage === "reconstruction") {
+    document.title = "PlanForge AI | Reconstruction";
+    $("stage").textContent = "Reconstruction";
+    $("cloud-layer").hidden = false;
+    $("frame-modes").hidden = true;
+    $("frame-heading").textContent = "Trajectory frame";
+    $("scores-title").hidden = true;
+    $("scores-table").hidden = true;
+  }
   manifest.captures.forEach((entry, index) => {
     const option = new Option(entry.capture_id, index);
     $("capture").add(option);
