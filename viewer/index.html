@@ -8,7 +8,7 @@
   <body>
     <header>
       <div class="identity">
-        <strong>PlanForge AI</strong><span>Calibration</span>
+        <strong>PlanForge AI</strong><span id="stage">Calibration</span>
       </div>
       <div class="actions">
         <span id="scale-status">Scale unverified</span>
@@ -36,9 +36,16 @@
       <aside>
         <label for="capture">Capture</label
         ><select id="capture" disabled></select>
+        <div id="cloud-layer" hidden>
+          <label for="layer">Cloud</label>
+          <select id="layer">
+            <option value="filtered">Filtered voxels</option>
+            <option value="raw">Raw observations</option>
+          </select>
+        </div>
         <div class="section">
-          <label>Frames</label>
-          <div class="segmented">
+          <label id="frame-heading">Frames</label>
+          <div id="frame-modes" class="segmented">
             <button id="all" aria-pressed="true">Sequence</button
             ><button id="single" aria-pressed="false">Single frame</button>
           </div>
@@ -77,8 +84,8 @@
         <div class="section">
           <h2>Selected hypothesis</h2>
           <dl id="hypothesis"></dl>
-          <h2>Candidate scores</h2>
-          <table>
+          <h2 id="scores-title">Candidate scores</h2>
+          <table id="scores-table">
             <thead>
               <tr>
                 <th>Rank</th>

@@ -50,15 +50,38 @@ for (const viewport of [
       path: testInfo.outputPath("sequence.png"),
       fullPage: true,
     });
-    await page.locator("#single").click();
-    expect(
-      await page.evaluate(() => window.planforgeDiagnostics.pointCount),
-    ).toBeLessThan(sequenceCount);
-    await page.locator("#frame").evaluate((input) => {
-      input.value = "10";
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-    });
-    await expect(page.locator("#frame-label")).toHaveText("000300");
+    const reconstruction = await page.locator("#layer").isVisible();
+    if (!reconstruction) {
+      await page.locator("#single").click();
+      expect(
+        await page.evaluate(() => window.planforgeDiagnostics.pointCount),
+      ).toBeLessThan(sequenceCount);
+      await page.locator("#frame").evaluate((input) => {
+        input.value = "10";
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      await expect(page.locator("#frame-label")).toHaveText("000300");
+    } else {
+      await page.locator("#layer").selectOption("raw");
+      await expect(page.locator("#download")).toHaveAttribute(
+        "href",
+        /raw\.ply$/,
+      );
+      await page.waitForFunction(
+        () => window.planforgeDiagnostics?.pointCount > 0,
+      );
+      expect(await visiblePixels(page)).toBeGreaterThan(1000);
+      await page.screenshot({
+        path: testInfo.outputPath("raw.png"),
+        fullPage: true,
+      });
+      await page.locator("#layer").selectOption("filtered");
+      await expect(page.locator("#download")).toHaveAttribute(
+        "href",
+        /cloud\.ply$/,
+      );
+      await expect(page.locator("#single")).toBeHidden();
+    }
     await page.locator("#confidence").selectOption("0");
     const allCount = await page.evaluate(
       () => window.planforgeDiagnostics.pointCount,
@@ -67,7 +90,7 @@ for (const viewport of [
     expect(
       await page.evaluate(() => window.planforgeDiagnostics.pointCount),
     ).toBeLessThanOrEqual(allCount);
-    await page.locator("#all").click();
+    if (!reconstruction) await page.locator("#all").click();
     await page.locator("#fit").click();
     await page.locator("#trajectory").uncheck();
     await page.locator("#trajectory").check();
