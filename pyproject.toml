@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "planforge-ai"
+version = "0.1.0"
+description = "Capture inspection and spatial reconstruction for PlanForge AI"
+requires-python = ">=3.11"
+dependencies = ["numpy>=1.26,<3", "Pillow>=10,<13", "opencv-python-headless>=4.8,<5", "scipy>=1.11,<2", "imageio-ffmpeg>=0.6,<1"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

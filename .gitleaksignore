@@ -1,0 +1,2 @@
+# False positive: OpenCV CAP_PROP_FRAME_COUNT in the historical synthetic test.
+86e6f2a2fb27a3a574e6da9cfa2d900b6689dd3c:tests/test_ingestion.py:generic-api-key:141
