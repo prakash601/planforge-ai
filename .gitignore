@@ -29,11 +29,9 @@ htmlcov/
 *.pem
 *.key
 
-# Data, captures, binaries (sample data comes later - keep large files out for now)
-data/raw/
-data/processed/
-data/benchmark/
-*.zip
+# Data - ALL sample captures stay local-only (2026-10-02 request, 912M, gitignored).
+# Structure is documented in docs/, never commit raw captures or ground truth.
+data/
 *.ply
 *.las
 *.laz
