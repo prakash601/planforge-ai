@@ -136,9 +136,9 @@ def test_report_retains_rgb_count_discrepancy(capture, monkeypatch):
         def __init__(self, path):
             self.video = original(path)
 
-        def get(self, key):
-            value = self.video.get(key)
-            return value + 1 if key == cv2.CAP_PROP_FRAME_COUNT else value
+        def get(self, property_id):
+            value = self.video.get(property_id)
+            return value + 1 if property_id == cv2.CAP_PROP_FRAME_COUNT else value
 
         def __getattr__(self, key):
             return getattr(self.video, key)
