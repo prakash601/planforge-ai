@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.env/
+*.env
+
+# Tooling
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.ipynb_checkpoints/
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Secrets / local config
+.env.local
+*.pem
+*.key
+
+# Data, captures, binaries (sample data comes later - keep large files out for now)
+data/raw/
+data/processed/
+data/benchmark/
+*.zip
+*.ply
+*.las
+*.laz
+*.bag
+*.mp4
+*.mov
+*.HEIC
+*.dng
+outputs/
+runs/
+
+# Models / large binaries (fetch by script or volume per case study)
+*.pt
+*.pth
+*.onnx
+*.bin
+
+# Docs are intentionally gitignored for now (2026-10-02 request).
+# Remove the line below when docs are ready to be published.
+docs/
