@@ -20,6 +20,7 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "planforge.measurements" = ["*.json"]
+"planforge.stitching" = ["*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
