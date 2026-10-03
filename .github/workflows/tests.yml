@@ -8,6 +8,8 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      OMP_NUM_THREADS: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6

@@ -51,7 +51,34 @@ for (const viewport of [
       fullPage: true,
     });
     const reconstruction = await page.locator("#layer").isVisible();
-    if (!reconstruction) {
+    const geometry = await page.locator("#geometry-controls").isVisible();
+    if (geometry) {
+      await expect(page.locator("#single")).toBeHidden();
+      await page.locator("#planes").uncheck();
+      expect(
+        await page.evaluate(() => window.planforgeGeometry.planesVisible),
+      ).toBe(false);
+      const without = await page.locator("canvas").screenshot();
+      await page.locator("#planes").check();
+      const withPlanes = await page.locator("canvas").screenshot();
+      expect(without.equals(withPlanes)).toBe(false);
+      await page.locator("#surface").selectOption("surface-000");
+      expect(
+        await page.evaluate(() => window.planforgeGeometry.selectedSurface),
+      ).toBe("surface-000");
+      await page.locator("#surface").selectOption("all");
+      await page.locator("#boundaries").uncheck();
+      expect(
+        await page.evaluate(() => window.planforgeGeometry.boundariesVisible),
+      ).toBe(false);
+      await page.locator("#boundaries").check();
+      await page.locator("#wall-traces").uncheck();
+      await page.locator("#wall-traces").check();
+      await page.screenshot({
+        path: testInfo.outputPath("geometry.png"),
+        fullPage: true,
+      });
+    } else if (!reconstruction) {
       await page.locator("#single").click();
       expect(
         await page.evaluate(() => window.planforgeDiagnostics.pointCount),
@@ -90,7 +117,7 @@ for (const viewport of [
     expect(
       await page.evaluate(() => window.planforgeDiagnostics.pointCount),
     ).toBeLessThanOrEqual(allCount);
-    if (!reconstruction) await page.locator("#all").click();
+    if (!reconstruction && !geometry) await page.locator("#all").click();
     await page.locator("#fit").click();
     await page.locator("#trajectory").uncheck();
     await page.locator("#trajectory").check();
@@ -130,3 +157,47 @@ for (const viewport of [
     expect(errors).toEqual([]);
   });
 }
+
+test("synthetic region and hole boundary overlays toggle", async ({
+  page,
+  request,
+}) => {
+  const manifest = await (await request.get("/manifest.json")).json();
+  test.skip(manifest.stage !== "geometry", "Geometry viewer fixture required");
+  await page.route("**/geometry.json", async (route) => {
+    const response = await route.fetch();
+    const geometry = await response.json();
+    geometry.regions = [
+      {
+        id: "synthetic-browser-region",
+        boundary_world: [
+          [-2, -1.4, 1],
+          [2, -1.4, 1],
+          [2, -1.4, 5],
+          [-2, -1.4, 5],
+          [-2, -1.4, 1],
+        ],
+        holes_world: [
+          [
+            [-1, -1.4, 2],
+            [0, -1.4, 2],
+            [0, -1.4, 3],
+            [-1, -1.4, 3],
+            [-1, -1.4, 2],
+          ],
+        ],
+      },
+    ];
+    await route.fulfill({ response, json: geometry });
+  });
+  await page.goto("/");
+  await page.waitForFunction(
+    () => window.planforgeGeometry?.boundaryLines === 2,
+  );
+  await page.locator("#planes").uncheck();
+  await page.locator("#wall-traces").uncheck();
+  const visible = await page.locator("canvas").screenshot();
+  await page.locator("#boundaries").uncheck();
+  const hidden = await page.locator("canvas").screenshot();
+  expect(visible.equals(hidden)).toBe(false);
+});

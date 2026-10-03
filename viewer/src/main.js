@@ -40,13 +40,160 @@ const cursor = new THREE.Mesh(
 );
 cursor.renderOrder = 3;
 group.add(cursor);
+const planeOverlays = new THREE.Group();
+const regionOverlays = new THREE.Group();
+const wallOverlays = new THREE.Group();
+group.add(planeOverlays, regionOverlays, wallOverlays);
 let sceneData,
+  geometryData,
   manifest,
   single = false,
   loadToken = 0;
 const colors = ["#8b97a0", "#c69338", "#327f73"].map(
   (color) => new THREE.Color(color),
 );
+
+function clearOverlay(overlay) {
+  for (const child of [...overlay.children]) {
+    child.geometry.dispose();
+    child.material.dispose();
+    overlay.remove(child);
+  }
+}
+
+function updateGeometry() {
+  const selected = $("surface").value;
+  planeOverlays.visible = $("planes").checked;
+  regionOverlays.visible = $("boundaries").checked;
+  wallOverlays.visible = $("wall-traces").checked;
+  for (const mesh of planeOverlays.children) {
+    mesh.visible =
+      selected === "all" ||
+      (selected === "candidates"
+        ? mesh.userData.role.endsWith("_candidate")
+        : mesh.userData.id === selected);
+  }
+  $("geometry-details").replaceChildren();
+  if (!geometryData) return;
+  const surface = geometryData.surfaces.find((row) => row.id === selected);
+  const details = surface
+    ? {
+        Role: surface.role.replaceAll("_", " "),
+        "Sample support": surface.sample_support.toLocaleString(),
+        "Median residual": `${surface.residual_median.toFixed(4)} pose units`,
+      }
+    : {
+        Orientation: geometryData.orientation.status,
+        "Plane candidates": geometryData.surfaces.length,
+        "Wall runs": geometryData.walls.length,
+        "Closed regions": geometryData.regions.length,
+      };
+  for (const [label, value] of Object.entries(details)) {
+    const dt = document.createElement("dt"),
+      dd = document.createElement("dd");
+    dt.textContent = label;
+    dd.textContent = value;
+    $("geometry-details").append(dt, dd);
+  }
+  window.planforgeGeometry = {
+    capture: geometryData.capture_id,
+    surfaces: geometryData.surfaces.length,
+    regions: geometryData.regions.length,
+    planesVisible: planeOverlays.visible,
+    boundariesVisible: regionOverlays.visible,
+    boundaryLines: regionOverlays.children.length,
+    selectedSurface: selected,
+  };
+}
+
+function loadGeometryOverlays() {
+  clearOverlay(planeOverlays);
+  clearOverlay(regionOverlays);
+  clearOverlay(wallOverlays);
+  $("surface").replaceChildren(
+    new Option("All detected planes", "all"),
+    new Option("Architectural candidates", "candidates"),
+  );
+  $("geometry-flags").replaceChildren();
+  if (!geometryData) return;
+  $("surface").value =
+    geometryData.orientation.status === "ambiguous" ? "all" : "candidates";
+  for (const surface of geometryData.surfaces) {
+    $("surface").add(
+      new Option(
+        `${surface.id} | ${surface.role.replaceAll("_", " ")}`,
+        surface.id,
+      ),
+    );
+    if (surface.patch_world.length < 3) continue;
+    const color =
+      surface.role === "floor_candidate"
+        ? "#477bd0"
+        : surface.role === "ceiling_candidate"
+          ? "#ccae31"
+          : surface.role === "wall_candidate"
+            ? "#c44b65"
+            : "#8c9197";
+    const vertices = surface.patch_world;
+    const positions = [];
+    for (let i = 1; i < vertices.length - 1; i++)
+      positions.push(...vertices[0], ...vertices[i], ...vertices[i + 1]);
+    const meshGeometry = new THREE.BufferGeometry();
+    meshGeometry.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute(positions, 3),
+    );
+    const mesh = new THREE.Mesh(
+      meshGeometry,
+      new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.12,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+      }),
+    );
+    mesh.userData = { id: surface.id, role: surface.role };
+    planeOverlays.add(mesh);
+  }
+  for (const region of geometryData.regions) {
+    for (const ring of [region.boundary_world, ...(region.holes_world || [])]) {
+      const line = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(
+          ring.map((point) => new THREE.Vector3(...point)),
+        ),
+        new THREE.LineBasicMaterial({ color: "#e06f21", depthTest: false }),
+      );
+      line.renderOrder = 4;
+      regionOverlays.add(line);
+    }
+  }
+  for (const wall of geometryData.walls) {
+    if (!wall.support_endpoints_world) continue;
+    const line = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(
+        wall.support_endpoints_world.map(
+          (point) => new THREE.Vector3(...point),
+        ),
+      ),
+      new THREE.LineBasicMaterial({ color: "#8f386d", depthTest: false }),
+    );
+    line.renderOrder = 3;
+    wallOverlays.add(line);
+  }
+  for (const flag of geometryData.flags) {
+    const li = document.createElement("li");
+    li.textContent = flag.replaceAll("_", " ");
+    $("geometry-flags").append(li);
+  }
+  camera.up.set(0, 1, 0);
+  if (
+    geometryData.orientation.up_world &&
+    geometryData.orientation.status !== "ambiguous"
+  )
+    camera.up.fromArray(geometryData.orientation.up_world);
+  updateGeometry();
+}
 
 function resize() {
   const { width, height } = viewport.getBoundingClientRect();
@@ -147,9 +294,14 @@ async function loadCapture() {
   try {
     const entry = manifest.captures[Number($("capture").value)];
     const raw = $("layer").value === "raw" && entry.raw_scene;
-    const data = await fetchJSON(raw ? entry.raw_scene : entry.scene);
+    const [data, geometry] = await Promise.all([
+      fetchJSON(raw ? entry.raw_scene : entry.scene),
+      entry.geometry ? fetchJSON(entry.geometry) : Promise.resolve(null),
+    ]);
     if (token !== loadToken) return;
     sceneData = data;
+    geometryData = geometry;
+    loadGeometryOverlays();
     $("frame").max = sceneData.frames.length - 1;
     $("frame").value = 0;
     trajectory.geometry.dispose();
@@ -201,6 +353,10 @@ $("rotate").addEventListener("click", () => {
 });
 $("capture").addEventListener("change", loadCapture);
 $("layer").addEventListener("change", loadCapture);
+$("surface").addEventListener("change", updateGeometry);
+$("planes").addEventListener("change", updateGeometry);
+$("boundaries").addEventListener("change", updateGeometry);
+$("wall-traces").addEventListener("change", updateGeometry);
 $("confidence").addEventListener("change", updatePoints);
 $("frame").addEventListener("input", updatePoints);
 $("all").addEventListener("click", () => {
@@ -228,10 +384,13 @@ renderer.setAnimationLoop(() => {
 
 try {
   manifest = await fetchJSON("manifest.json");
-  if (manifest.stage === "reconstruction") {
-    document.title = "PlanForge AI | Reconstruction";
-    $("stage").textContent = "Reconstruction";
-    $("cloud-layer").hidden = false;
+  if (["reconstruction", "geometry"].includes(manifest.stage)) {
+    const stage =
+      manifest.stage === "geometry" ? "Room geometry" : "Reconstruction";
+    document.title = `PlanForge AI | ${stage}`;
+    $("stage").textContent = stage;
+    $("cloud-layer").hidden = manifest.stage !== "reconstruction";
+    $("geometry-controls").hidden = manifest.stage !== "geometry";
     $("frame-modes").hidden = true;
     $("frame-heading").textContent = "Trajectory frame";
     $("scores-title").hidden = true;

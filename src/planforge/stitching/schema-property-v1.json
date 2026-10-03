@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PlanForge candidate property stitching v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "property_id",
+    "scale",
+    "rooms",
+    "walls",
+    "openings",
+    "measurements",
+    "room_graph",
+    "transforms",
+    "overlaps",
+    "flags",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "property_id": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "scale": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "length_unit", "area_unit", "meters_per_pose_unit", "physical_interval_status"],
+      "properties": {
+        "status": { "const": "unverified" },
+        "length_unit": { "const": "pose_unit" },
+        "area_unit": { "const": "pose_unit_squared" },
+        "meters_per_pose_unit": { "type": "null" },
+        "physical_interval_status": { "const": "unbounded_unknown_scale" }
+      }
+    },
+    "rooms": { "type": "array", "items": { "type": "object" } },
+    "walls": { "type": "array", "items": { "type": "object" } },
+    "openings": { "type": "array", "items": { "type": "object" } },
+    "measurements": { "type": "array", "items": { "type": "object" } },
+    "room_graph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nodes", "edges"],
+      "properties": {
+        "nodes": { "type": "array", "items": { "type": "object" } },
+        "edges": { "type": "array", "items": { "type": "object" } }
+      }
+    },
+    "transforms": { "type": "object" },
+    "overlaps": { "type": "array", "items": { "type": "object" } },
+    "flags": { "type": "array", "items": { "type": "string" } },
+    "provenance": { "type": "object" }
+  }
+}
