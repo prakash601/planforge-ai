@@ -81,6 +81,24 @@
             value="2"
           />
         </div>
+        <div id="geometry-controls" class="section" hidden>
+          <h2>Candidate geometry</h2>
+          <label class="check"
+            ><input type="checkbox" id="planes" checked />Plane envelopes</label
+          >
+          <label class="check"
+            ><input type="checkbox" id="boundaries" checked />Closed
+            regions</label
+          >
+          <label class="check"
+            ><input type="checkbox" id="wall-traces" checked />Wall support
+            traces</label
+          >
+          <label for="surface">Surface</label>
+          <select id="surface"></select>
+          <dl id="geometry-details"></dl>
+          <ul id="geometry-flags"></ul>
+        </div>
         <div class="section">
           <h2>Selected hypothesis</h2>
           <dl id="hypothesis"></dl>
