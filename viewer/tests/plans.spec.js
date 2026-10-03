@@ -86,3 +86,67 @@ for (const viewport of [
     expect(errors).toEqual([]);
   });
 }
+
+for (const viewport of [
+  { width: 1440, height: 900 },
+  { width: 390, height: 844 },
+]) {
+  test(`annotated opening fixture at ${viewport.width}px`, async ({ page }) => {
+    test.skip(
+      !root || !process.env.PLANFORGE_OPENING_FIXTURE,
+      "Requires generated synthetic Task 7 fixture",
+    );
+    await page.setViewportSize(viewport);
+    await page.goto(`${root}/synthetic/index.html`);
+    await expect(
+      page.getByRole("cell", {
+        name: "door candidate width [pose units]",
+        exact: true,
+      }),
+    ).toBeVisible();
+    const model = await (
+      await page.request.get(`${root}/synthetic/measurements.json`)
+    ).json();
+    expect(model.schema_version).toBe("1.1.0");
+    expect(model.openings).toHaveLength(1);
+    const markerPixels = await page.locator("img").evaluate((img) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const context = canvas.getContext("2d");
+      context.drawImage(img, 0, 0);
+      const data = context.getImageData(45, 170, 910, 650).data;
+      let pixels = 0;
+      for (let index = 0; index < data.length; index += 4) {
+        if (data[index] > 150 && data[index + 1] < 70 && data[index + 2] < 80)
+          pixels++;
+      }
+      return pixels;
+    });
+    expect(markerPixels).toBeGreaterThan(100);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await page.screenshot({
+      path: test.info().outputPath(`synthetic-opening-${viewport.width}.png`),
+      fullPage: true,
+    });
+    await page.getByRole("link", { name: "Open SVG", exact: true }).click();
+    await expect(page.locator("svg")).toBeVisible();
+    const fits = await page.locator("svg").evaluate((svg) => {
+      const box = svg.viewBox.baseVal;
+      return [...svg.querySelectorAll("text")].every((text) => {
+        const rect = text.getBBox();
+        return (
+          rect.x >= 0 &&
+          rect.y >= 0 &&
+          rect.x + rect.width <= box.width &&
+          rect.y + rect.height <= box.height
+        );
+      });
+    });
+    expect(fits).toBe(true);
+  });
+}

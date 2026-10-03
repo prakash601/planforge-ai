@@ -1,8 +1,9 @@
 """Measure the Task 4 contract without asserting physical scale or room identity."""
 
 import hashlib
-from importlib.resources import files
 import json
+from importlib.resources import files
+from itertools import pairwise
 
 import numpy as np
 from jsonschema import Draft202012Validator
@@ -40,8 +41,13 @@ def canonical_ring(ring):
 
 
 def validate_model(model):
+    schema_file = {"1.0.0": "schema-v1.json", "1.1.0": "schema-v1.1.json"}.get(
+        model.get("schema_version")
+    )
+    if schema_file is None:
+        raise ValueError("unsupported measurement schema version")
     schema = json.loads(
-        files("planforge.measurements").joinpath("schema-v1.json").read_text()
+        files("planforge.measurements").joinpath(schema_file).read_text()
     )
     Draft202012Validator(schema).validate(model)
     # JSON Schema cannot express foreign keys, numeric ordering or finiteness.
@@ -86,6 +92,23 @@ def validate_model(model):
     for opening in model["openings"]:
         if opening["wall_id"] not in walls:
             raise ValueError("unknown opening wall reference")
+        if "support_wall_ids" in opening:
+            if (
+                not set(opening["support_wall_ids"]) <= walls
+                or opening["wall_id"] not in opening["support_wall_ids"]
+            ):
+                raise ValueError("invalid opening support wall references")
+            by_id = {wall["id"]: wall for wall in model["walls"]}
+            if any(
+                opening["source_surface_id"] not in by_id[wall_id]["source_surface_ids"]
+                for wall_id in opening["support_wall_ids"]
+            ):
+                raise ValueError("opening and supporting walls have different surfaces")
+            if opening["height_interval"][0] >= opening["height_interval"][1]:
+                raise ValueError("invalid opening height interval")
+            endpoints = np.asarray(opening["endpoints_local"], float)
+            if np.linalg.norm(endpoints[1] - endpoints[0]) <= 0:
+                raise ValueError("nonzero opening width required")
     referenced = set()
     for entity in model["rooms"] + model["walls"] + model["openings"]:
         for reference in entity["measurement_ids"]:
@@ -102,6 +125,10 @@ def validate_model(model):
             raise ValueError("unknown measurement owner")
         if (item["kind"] == "wall_length") != (item["owner_id"] in walls):
             raise ValueError("measurement kind does not match owner")
+        if (item["kind"] == "opening_width") != (
+            item["owner_id"] in {opening["id"] for opening in model["openings"]}
+        ):
+            raise ValueError("opening measurement kind does not match owner")
         value = item["value"]
         interval = item["uncertainty"]["conditional_interval"]
         if value is not None and (
@@ -307,7 +334,7 @@ def measure_geometry(geometry):
         }
         source_ids = set(floor_ids)
         for ring in (outer, *holes):
-            for a, b in zip(ring[:-1], ring[1:]):
+            for a, b in pairwise(ring):
                 edge = LineString([a, b])
                 supported = sorted(
                     {

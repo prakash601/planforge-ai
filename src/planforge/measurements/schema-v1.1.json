@@ -1,0 +1,595 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PlanForge candidate measurements with openings v1.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "capture_id",
+    "scale",
+    "rooms",
+    "walls",
+    "openings",
+    "measurements",
+    "flags",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.1.0"
+    },
+    "capture_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scale": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "length_unit",
+        "area_unit",
+        "meters_per_pose_unit",
+        "physical_interval_status"
+      ],
+      "properties": {
+        "status": {
+          "const": "unverified"
+        },
+        "length_unit": {
+          "const": "pose_unit"
+        },
+        "area_unit": {
+          "const": "pose_unit_squared"
+        },
+        "meters_per_pose_unit": {
+          "type": "null"
+        },
+        "physical_interval_status": {
+          "const": "unbounded_unknown_scale"
+        }
+      }
+    },
+    "rooms": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/room"
+      }
+    },
+    "walls": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/wall"
+      }
+    },
+    "openings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/opening"
+      }
+    },
+    "measurements": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/measurement"
+      }
+    },
+    "flags": {
+      "$ref": "#/$defs/strings"
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "geometry_sha256",
+        "source_depth_pose_sha256",
+        "hypothesis",
+        "orientation_status",
+        "id_policy",
+        "uncertainty_method",
+        "excluded_errors",
+        "geometry_tolerances",
+        "opening_detection"
+      ],
+      "properties": {
+        "geometry_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "source_depth_pose_sha256": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "hypothesis": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "orientation_status": {
+          "enum": [
+            "provisional",
+            "explicit_unverified",
+            "ambiguous",
+            "unresolved"
+          ]
+        },
+        "id_policy": {
+          "type": "string"
+        },
+        "uncertainty_method": {
+          "type": "string"
+        },
+        "excluded_errors": {
+          "$ref": "#/$defs/strings"
+        },
+        "geometry_tolerances": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "plane_distance",
+            "junction_tolerance"
+          ],
+          "properties": {
+            "plane_distance": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "junction_tolerance": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          }
+        },
+        "opening_detection": {
+          "type": "object"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^(room|wall|opening|measurement)-[a-f0-9]{20}$"
+    },
+    "strings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "ids": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/id"
+      },
+      "uniqueItems": true
+    },
+    "point": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "number"
+      }
+    },
+    "ring": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "$ref": "#/$defs/point"
+      }
+    },
+    "room": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "status",
+        "source_region_id",
+        "polygon_local",
+        "holes_local",
+        "wall_ids",
+        "measurement_ids"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "status": {
+          "const": "candidate_region"
+        },
+        "source_region_id": {
+          "type": "string"
+        },
+        "polygon_local": {
+          "$ref": "#/$defs/ring"
+        },
+        "holes_local": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ring"
+          }
+        },
+        "wall_ids": {
+          "$ref": "#/$defs/ids"
+        },
+        "measurement_ids": {
+          "$ref": "#/$defs/ids"
+        }
+      }
+    },
+    "wall": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "room_id",
+        "endpoints_local",
+        "source_surface_ids",
+        "measurement_ids"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": [
+            "observed_run",
+            "region_boundary"
+          ]
+        },
+        "room_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "endpoints_local": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/point"
+          }
+        },
+        "source_surface_ids": {
+          "$ref": "#/$defs/strings"
+        },
+        "measurement_ids": {
+          "$ref": "#/$defs/ids"
+        }
+      }
+    },
+    "opening": {
+      "description": "Geometry-only candidates. Door/window semantic class and physical dimensions remain unverified.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "wall_id",
+        "kind",
+        "measurement_ids",
+        "status",
+        "association",
+        "support_wall_ids",
+        "source_surface_id",
+        "endpoints_local",
+        "height_interval",
+        "evidence"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "wall_id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": [
+            "door",
+            "window",
+            "unknown"
+          ]
+        },
+        "measurement_ids": {
+          "$ref": "#/$defs/ids"
+        },
+        "status": {
+          "const": "candidate"
+        },
+        "association": {
+          "enum": [
+            "contained",
+            "adjacent_support"
+          ]
+        },
+        "support_wall_ids": {
+          "$ref": "#/$defs/ids",
+          "minItems": 1
+        },
+        "source_surface_id": {
+          "type": "string"
+        },
+        "endpoints_local": {
+          "$ref": "#/$defs/wall/properties/endpoints_local"
+        },
+        "height_interval": {
+          "$ref": "#/$defs/interval"
+        },
+        "evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "border_support",
+            "rectangularity",
+            "representative_ray_count",
+            "supporting_frames"
+          ],
+          "properties": {
+            "border_support": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 4,
+              "items": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "rectangularity": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "representative_ray_count": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "supporting_frames": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      }
+    },
+    "interval": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "number",
+        "minimum": 0
+      }
+    },
+    "measurement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "owner_id",
+        "kind",
+        "status",
+        "value",
+        "unit",
+        "evidence",
+        "unavailable_reason",
+        "uncertainty"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "owner_id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": [
+            "wall_length",
+            "floor_area",
+            "ceiling_height",
+            "opening_width"
+          ]
+        },
+        "status": {
+          "enum": [
+            "candidate",
+            "unavailable"
+          ]
+        },
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "unit": {
+          "enum": [
+            "pose_unit",
+            "pose_unit_squared"
+          ]
+        },
+        "evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "surface_ids"
+          ],
+          "properties": {
+            "surface_ids": {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/strings"
+                }
+              ],
+              "minItems": 1
+            },
+            "endpoint_displacement_pose_units": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "boundary_displacement_pose_units": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "floor_samples": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "camera_samples": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "envelope_overlap_fraction": {
+              "type": "number",
+              "minimum": 0.5,
+              "maximum": 1.000000001
+            },
+            "height_range_pose_units": {
+              "$ref": "#/$defs/interval"
+            },
+            "raster_cell_pose_units": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "representative_ray_count": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "supporting_frames": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "unavailable_reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "uncertainty": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "method",
+            "confidence_level",
+            "conditional_interval",
+            "physical_interval",
+            "assumptions"
+          ],
+          "properties": {
+            "status": {
+              "const": "uncalibrated"
+            },
+            "method": {
+              "enum": [
+                "geometry_sensitivity_v1",
+                "opening_grid_sensitivity_v1"
+              ]
+            },
+            "confidence_level": {
+              "type": "null"
+            },
+            "physical_interval": {
+              "type": "null"
+            },
+            "conditional_interval": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/interval"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "assumptions": {
+              "$ref": "#/$defs/strings"
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "floor_area"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "unit": {
+                "const": "pose_unit_squared"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "unit": {
+                "const": "pose_unit"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "unavailable"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "type": "null"
+              },
+              "unavailable_reason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uncertainty": {
+                "properties": {
+                  "conditional_interval": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "value": {
+                "type": "number"
+              },
+              "unavailable_reason": {
+                "type": "null"
+              },
+              "uncertainty": {
+                "properties": {
+                  "conditional_interval": {
+                    "$ref": "#/$defs/interval"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

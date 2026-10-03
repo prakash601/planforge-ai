@@ -123,7 +123,22 @@ def render_plan(model, output):
     room_labels = {
         room["id"]: f"R{index + 1:02}" for index, room in enumerate(model["rooms"])
     }
-    height = max(1000, 380 + 32 * len(displayed) + 160 * len(model["rooms"]))
+    opening_labels = {
+        opening["id"]: f"O{index + 1:02}"
+        for index, opening in enumerate(model["openings"])
+    }
+    visible_openings = [
+        opening
+        for opening in model["openings"]
+        if set(opening.get("support_wall_ids", [opening["wall_id"]])) & set(wall_labels)
+    ]
+    height = max(
+        1000,
+        420
+        + 32 * len(displayed)
+        + 160 * len(model["rooms"])
+        + 76 * len(model["openings"]),
+    )
     drawing = Drawing(1600, height)
     drawing.text((50, 30), "PlanForge AI", 34)
     drawing.text((50, 80), model["capture_id"], 22, max_width=1450)
@@ -185,13 +200,45 @@ def render_plan(model, output):
             polygon = Polygon(room["polygon_local"], room["holes_local"])
             position = polylabel(polygon, tolerance=max(span) * 1e-4)
             x, y = project([position.x, position.y])
-            drawing.text(
-                (x - 20, y - 10),
-                room_labels[room["id"]],
-                22,
-                "#17655e",
-                background=True,
+            labels.append(
+                drawing.text(
+                    (x - 20, y - 10),
+                    room_labels[room["id"]],
+                    22,
+                    "#17655e",
+                    background=True,
+                )
             )
+        for opening in visible_openings:
+            endpoints = project(opening["endpoints_local"])
+            drawing.line(endpoints, "#a12f32", 7, dashed=True)
+            midpoint = endpoints.mean(axis=0)
+            direction = endpoints[1] - endpoints[0]
+            normal = np.array([-direction[1], direction[0]]) / np.linalg.norm(direction)
+            for displacement in (24, -36, 54, -66, 84, -96):
+                x, y = midpoint + normal * displacement - [18, 9]
+                box = (x - 4, y - 3, x + 45, y + 27)
+                if (
+                    45 <= x <= 910
+                    and 170 <= y <= 820
+                    and not any(
+                        box[0] < old[2]
+                        and box[2] > old[0]
+                        and box[1] < old[3]
+                        and box[3] > old[1]
+                        for old in labels
+                    )
+                ):
+                    labels.append(
+                        drawing.text(
+                            (x, y),
+                            opening_labels[opening["id"]],
+                            18,
+                            "#a12f32",
+                            background=True,
+                        )
+                    )
+                    break
         drawing.text(
             (50, 855),
             "Supported candidate boundaries"
@@ -249,6 +296,35 @@ def render_plan(model, output):
             y += 24
             drawing.text((1030, y), sensitivity, 16, "#6c777b", max_width=510)
             rows.append((room_labels[room["id"]], label, value, sensitivity))
+    if model["openings"]:
+        y += 35
+        drawing.text((1030, y), "Opening candidates [pose units]", 22, "#a12f32")
+        for opening in model["openings"]:
+            item = measurements[opening["measurement_ids"][0]]
+            lo, hi = item["uncertainty"]["conditional_interval"]
+            y += 32
+            label = opening_labels[opening["id"]]
+            drawing.text(
+                (1030, y),
+                f"{label}  {opening['kind']} candidate: {item['value']:.3f}",
+                18,
+                max_width=510,
+            )
+            y += 24
+            drawing.text(
+                (1030, y),
+                f"[{lo:.3f}, {hi:.3f}]  Geometry only; class unverified",
+                16,
+                max_width=510,
+            )
+            rows.append(
+                (
+                    label,
+                    f"{opening['kind']} candidate width [pose units]",
+                    f"{item['value']:.3f}",
+                    f"[{lo:.3f}, {hi:.3f}]",
+                )
+            )
     drawing.text(
         (50, height - 60),
         "Sensitivity ranges are uncalibrated, not confidence intervals. Physical uncertainty is unknown; drift is uncorrected.",
@@ -268,7 +344,7 @@ def render_plan(model, output):
     )
     html = f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PlanForge AI - {escape(model["capture_id"])}</title><style>
-*{{box-sizing:border-box}}body{{margin:0;color:#26383d;background:#fff;font:16px system-ui,sans-serif}}main{{max-width:1600px;margin:auto;padding:24px}}h1{{font-size:28px;margin:0 0 8px}}h2{{font-size:20px}}p,li{{line-height:1.5;overflow-wrap:anywhere}}.warning{{color:#a12f32}}nav{{display:flex;gap:24px;flex-wrap:wrap;margin:20px 0}}a{{color:#17655e}}img{{display:block;width:100%;height:auto}}table{{border-collapse:collapse;width:100%;max-width:900px}}td,th{{text-align:left;border-bottom:1px solid #d7dedf;padding:12px 8px;overflow-wrap:anywhere}}th{{font-size:14px}}@media(max-width:600px){{main{{padding:16px}}td,th{{padding:10px 4px;font-size:13px}}h1{{font-size:24px}}}}
+*{{box-sizing:border-box}}body{{margin:0;color:#26383d;background:#fff;font:16px system-ui,sans-serif}}main{{max-width:1600px;margin:auto;padding:24px}}h1{{font-size:28px;margin:0 0 8px}}h2{{font-size:20px}}p,li{{line-height:1.5;overflow-wrap:anywhere}}.warning{{color:#a12f32}}nav{{display:flex;gap:24px;flex-wrap:wrap;margin:20px 0}}a{{color:#17655e}}img{{display:block;width:100%;height:auto}}table{{border-collapse:collapse;width:100%;max-width:900px}}td:first-child,td:nth-child(3),th:nth-child(3),td:last-child{{white-space:nowrap}}td,th{{text-align:left;border-bottom:1px solid #d7dedf;padding:12px 8px;overflow-wrap:anywhere}}th{{font-size:14px}}@media(max-width:600px){{main{{padding:16px}}td,th{{padding:10px 4px;font-size:13px}}h1{{font-size:24px}}}}
 </style></head><body><main><h1>PlanForge AI</h1><p>{escape(model["capture_id"])}</p>
 <p class="warning">Candidate geometry. Scale unverified; pose units are not meters. Sensitivity ranges are uncalibrated, not confidence intervals.</p>
 <nav><a href="plan.svg">Open SVG</a><a href="plan.png" download>Download PNG</a><a href="measurements.json">Measurements JSON</a><a href="run.json">Run record</a></nav>
@@ -285,4 +361,6 @@ def render_plan(model, output):
         "displayed_wall_ids": [wall["id"] for wall in displayed],
         "wall_labels": wall_labels,
         "room_labels": room_labels,
+        "opening_labels": opening_labels,
+        "displayed_opening_ids": [opening["id"] for opening in visible_openings],
     }

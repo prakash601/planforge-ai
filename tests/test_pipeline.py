@@ -55,7 +55,15 @@ def test_small_pipeline_artifacts_and_run_record(tmp_path, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "stage", ["reconstruction", "extract_geometry", "measure_geometry", "render_plan"]
+    "stage",
+    [
+        "reconstruction",
+        "extract_geometry",
+        "measure_geometry",
+        "detect_openings",
+        "attach_openings",
+        "render_plan",
+    ],
 )
 def test_failed_rerun_preserves_entire_previous_run(tmp_path, monkeypatch, stage):
     capture, calibration = setup_capture(tmp_path, monkeypatch)

@@ -13,6 +13,7 @@ from planforge.diagnostics.calibration import Hypothesis
 from planforge.geometry import GeometryConfig, extract_geometry
 from planforge.ingestion import LidarCaptureLoader
 from planforge.measurements import measure_geometry
+from planforge.openings import OpeningConfig, attach_openings, detect_openings
 from planforge.reconstruction import ReconstructionConfig, reconstruct
 from planforge.rendering import render_plan
 
@@ -25,11 +26,13 @@ def run_capture(
     geometry=None,
     up_vector=None,
     progress=None,
+    openings=None,
 ):
     reconstruction = (
         ReconstructionConfig() if reconstruction is None else reconstruction
     )
     geometry = GeometryConfig() if geometry is None else geometry
+    openings = OpeningConfig() if openings is None else openings
     input_path, output, calibration = (
         Path(path).resolve() for path in (input_path, output, calibration)
     )
@@ -88,6 +91,11 @@ def run_capture(
         )
         write_json(workspace / "debug" / "geometry.json", room_geometry.to_dict())
         model = stage("measurements", lambda: measure_geometry(room_geometry.to_dict()))
+        detection = stage(
+            "openings", lambda: detect_openings(scene, room_geometry, openings)
+        )
+        write_json(workspace / "debug" / "openings.json", detection)
+        model = attach_openings(model, detection)
         write_json(workspace / "measurements.json", model)
         artifacts = stage("rendering", lambda: render_plan(model, workspace))
         timings["total_compute"] = perf_counter() - started
@@ -101,6 +109,7 @@ def run_capture(
             "configuration": {
                 "reconstruction": asdict(reconstruction),
                 "geometry": asdict(geometry),
+                "openings": asdict(openings),
                 "up_vector": None if up_vector is None else list(up_vector),
             },
             "timings_seconds": timings,
@@ -110,6 +119,7 @@ def run_capture(
             "artifacts": {
                 "measurements": "measurements.json",
                 "geometry": "debug/geometry.json",
+                "openings": "debug/openings.json",
                 "reconstruction": "debug/reconstruction/spatial_scene.json",
                 **artifacts,
             },
@@ -134,7 +144,8 @@ def run_capture(
                 "Supplied poses, no drift correction",
                 "Candidate regions, not verified rooms or property footprint",
                 "Sensitivity ranges uncalibrated",
-                "No openings, damage, stitching or non-LiDAR input tier",
+                "Opening classes geometry-only and unverified; no RGB alignment",
+                "No damage, stitching or non-LiDAR input tier",
             ],
         }
         write_json(workspace / "run.json", record)
