@@ -51,6 +51,5 @@ runs/
 *.onnx
 *.bin
 
-# Docs are intentionally gitignored for now (2026-10-02 request).
-# Remove the line below when docs are ready to be published.
-docs/
+# Docs are published (2026-10-04). Only local working notes / scratch stay out.
+docs/.DS_Store

@@ -23,8 +23,8 @@ We aim to acknowledge within 48 hours and provide a remediation plan within 7 da
 - Dependencies declared in manifests / lockfiles
 - Build and release automation under `.github/workflows/`
 
-Out of scope: the `docs/` folder (currently local-only and gitignored) and
-user-supplied sample captures under `data/` (added later).
+Out of scope: user-supplied sample captures under `data/` (gitignored; never
+committed).
 
 ## Hardening enabled on this repository
 
