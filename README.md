@@ -187,6 +187,8 @@ CI runs the test suite, viewer build, CodeQL and gitleaks on every pull request.
 ## Documentation
 
 - [docs/COMPLIANCE.md](docs/COMPLIANCE.md) - requirement-to-artifact compliance matrix and honest gap list
+- [docs/CAPTURE-ROUTE.md](docs/CAPTURE-ROUTE.md) - chosen capture route, one-page protocol and device matrix
+- [docs/TECHNICAL-REPORT.md](docs/TECHNICAL-REPORT.md) - architecture, drift, error budget, calibration and failure modes
 - [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) - requirements distilled from the case study
 - [docs/12-DESIGN.md](docs/12-DESIGN.md) - architecture and module map
 - [docs/ROADMAP.md](docs/ROADMAP.md) - build sequence and current status

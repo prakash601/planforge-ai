@@ -8,7 +8,7 @@ Status values: **Implemented** (works end-to-end, locally tested),
 Source of requirements: `docs/01`-`11` distilled from the case study in
 `docs/source/`. Build sequence and per-task evidence: [ROADMAP.md](ROADMAP.md).
 
-**Summary: 1 of 3 input tiers; 1 of 8 deliverables complete; 0 of 6 measured
+**Summary: 1 of 3 input tiers; 4 of 8 deliverables complete; 0 of 6 measured
 gates achievable.** The LiDAR tier is a working, tested engine. Video, photos,
 damage, the benchmark set, the head-to-head, the fix loop and the walk-in test
 are not started. Every measured gate needs laser/tape ground truth that the
@@ -18,9 +18,9 @@ supplied captures do not contain, so none can be claimed.
 
 | # | Requirement | File path | Artifact | Status |
 | --- | --- | --- | --- | --- |
-| 1.1 | Choose a capture route (own iOS app, or stock tool + one-page protocol) | - | - | Not started |
-| 1.2 | TestFlight/dev build, or named stock tool with protocol | - | - | Not started |
-| 1.3 | Device matrix: which tier on which hardware, honest accuracy | - | - | Not started |
+| 1.1 | Choose a capture route (own iOS app, or stock tool + one-page protocol) | `docs/CAPTURE-ROUTE.md` | Route 2 chosen | Implemented |
+| 1.2 | TestFlight/dev build, or named stock tool with protocol | `docs/CAPTURE-ROUTE.md` | one-page protocol | Partial (tool name/version to confirm) |
+| 1.3 | Device matrix: which tier on which hardware, honest accuracy | `docs/CAPTURE-ROUTE.md` | device matrix table | Implemented |
 | 1.4 | Photo tier: 2-8 stills/room, per-room folders, stitched plan, widened intervals | - | - | Not started |
 | 1.5 | Video tier: handheld walkthrough clip | - | - | Not started |
 | 1.6 | LiDAR tier: depth, poses, intrinsics on Pro-class devices | `src/planforge/ingestion/lidar.py` | `LidarCaptureLoader`, validated frame records | Implemented |
@@ -94,12 +94,12 @@ supplied captures do not contain, so none can be claimed.
 | # | Deliverable | File path | Status |
 | --- | --- | --- | --- |
 | D.1 | Compliance matrix | `docs/COMPLIANCE.md` | Implemented (this file) |
-| D.2 | Capture route + device matrix | - | Not started |
+| D.2 | Capture route + device matrix | `docs/CAPTURE-ROUTE.md` | Implemented (protocol + matrix; LiDAR only today) |
 | D.3 | Repo + README, one command/capture, <15 min | `README.md`, `src/planforge/cli.py` | Implemented |
 | D.4 | Reproduction bundle | `scripts/` | Partial (scripts exist; no single bundle) |
 | D.5 | Benchmark report (all tiers, repeatability, head-to-head, timing) | - | Not started |
 | D.6 | Fix-loop bundle | - | Not started |
-| D.7 | Technical report, max 6 pages | - | Not started |
+| D.7 | Technical report, max 6 pages | `docs/TECHNICAL-REPORT.md` | Implemented |
 | D.8 | Raw benchmark data | - | Not started |
 
 ## Constraints
@@ -121,7 +121,7 @@ supplied captures do not contain, so none can be claimed.
 | 15% | Verified benchmark accuracy | Not measurable (no ground truth) |
 | 10% | Compliance matrix coverage | Implemented (this file) |
 | 10% | Head-to-head | Not started |
-| 5% | Capture route quality | Not started |
+| 5% | Capture route quality | Implemented (route, protocol, device matrix; LiDAR only) |
 | 5% | Process evidence | Implemented |
 
 ## Honest gaps in one line each
