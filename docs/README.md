@@ -8,6 +8,7 @@ the code.
 
 | Document | What it covers |
 | --- | --- |
+| [COMPLIANCE.md](COMPLIANCE.md) | Requirement -> file path -> artifact -> status matrix |
 | [REQUIREMENTS.md](REQUIREMENTS.md) | Index of the case-study requirements distilled into `01`-`11` |
 | [12-DESIGN.md](12-DESIGN.md) | Architecture, module map, domain objects and engineering rules |
 | [ROADMAP.md](ROADMAP.md) | The 16-task build sequence with current status and evidence |

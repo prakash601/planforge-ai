@@ -156,7 +156,7 @@ readiness (Task 16).
 | 3 | Openings and whole-property layout | Complete locally (candidate) |
 | 4 | Damage and scope assessment | Not started |
 | 5 | Video and photo tiers | Not started |
-| 6 | Prove and package | Not started |
+| 6 | Prove and package | Started (compliance matrix done; benchmark, fix loop, reports pending) |
 
 ## Honest limitations
 
@@ -186,6 +186,7 @@ CI runs the test suite, viewer build, CodeQL and gitleaks on every pull request.
 
 ## Documentation
 
+- [docs/COMPLIANCE.md](docs/COMPLIANCE.md) - requirement-to-artifact compliance matrix and honest gap list
 - [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) - requirements distilled from the case study
 - [docs/12-DESIGN.md](docs/12-DESIGN.md) - architecture and module map
 - [docs/ROADMAP.md](docs/ROADMAP.md) - build sequence and current status
