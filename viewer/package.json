@@ -8,7 +8,7 @@
     "test": "playwright test"
   },
   "dependencies": {
-    "lucide": "1.50.0",
+    "lucide": "1.52.0",
     "three": "0.186.1"
   },
   "devDependencies": {
